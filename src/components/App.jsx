@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { StyledAppContainer } from './App.styled';
 import { fetchPhoto } from 'servises/api';
 
@@ -6,127 +6,102 @@ import { Searchbar } from './Searchbar/Searchbar';
 import { Loader } from './Loader/Loader';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { LoadMoreButton } from './LoadMoreButton/LoadMoreButton';
-import Modal from './Modal/Modal';
+import { Modal } from './Modal/Modal';
 import Notiflix from 'notiflix';
 
-export class App extends Component {
-  state = {
-    query: '',
-    items: [],
-    page: 1,
-    total: 0,
-    error: null,
-    isLoading: false,
-    modal: {
-      isOpen: false,
-      data: null,
-    },
-    selectedImage: null,
-  };
+export const App = () => {
+  const [query, setQuerty] = useState('');
+  const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
-  fetchAllPhotos = async () => {
-    try {
-      this.setState({ isLoading: true });
-      const photo = await fetchPhoto(this.state.query, this.state.page);
-
-      if (photo.hits.length === 0) {
-        Notiflix.Notify.info('Изображение не найдено.');
-      } else {
-        this.setState({ items: photo.hits, total: photo.total });
-        Notiflix.Notify.success('Изображение успешно найдено.');
+  useEffect(() => {
+    const fetchAllPhotos = async () => {
+      try {
+        setIsLoading(true);
+        const photo = await fetchPhoto(query, page);
+        if (photo.hits.length === 0) {
+          Notiflix.Notify.info('Изображение не найдено.');
+        } else {
+          setItems(prevItems => [...prevItems, ...photo.hits]);
+          setTotal(photo.total);
+          Notiflix.Notify.success('Изображение успешно найдено.');
+        }
+      } catch (error) {
+        Notiflix.Notify.failure('Произошла ошибка при поиске изображения.');
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      Notiflix.Notify.failure('Произошла ошибка при поиске изображения.');
-      this.setstate({ error: error.message });
-    } finally {
-      this.setState({ isLoading: false });
-    }
-  };
+    };
+    fetchAllPhotos();
+  }, [query, page]);
 
-  loadMoreImages = async () => {
-    const { query, page, items, total } = this.state;
-    const nextPage = page + 1;
+  // const loadMoreImages = async () => {
+  //   const nextPage = page + 1;
+  //   if (items.length >= total) {
+  //     Notiflix.Notify.info('Больше изображений не найдено.');
+  //     return;
+  //   }
 
-    if (items.length >= total) {
-      Notiflix.Notify.info('Больше изображений не найдено.');
-      return;
-    }
+  //   try {
+  //     const photo = await fetchPhoto(query, nextPage);
+  //     if (photo.hits.length === 0) {
+  //       Notiflix.Notify.info('Больше изображений не найдено.');
+  //     } else {
+  //       this.setState(prevState => ({
+  //         items: [...prevState.items, ...photo.hits],
+  //         page: nextPage,
+  //       }));
+  //       Notiflix.Notify.success('Изображения успешно загружены.');
+  //     }
+  //   } catch (error) {
+  //     Notiflix.Notify.failure('Произошла ошибка при загрузке изображений.');
+  //     this.setState({ error: error.message });
+  //   }
+  // };
 
-    try {
-      const photo = await fetchPhoto(query, nextPage);
-
-      if (photo.hits.length === 0) {
-        Notiflix.Notify.info('Больше изображений не найдено.');
-      } else {
-        this.setState(prevState => ({
-          items: [...prevState.items, ...photo.hits],
-          page: nextPage,
-        }));
-        Notiflix.Notify.success('Изображения успешно загружены.');
-      }
-    } catch (error) {
-      Notiflix.Notify.failure('Произошла ошибка при загрузке изображений.');
-      this.setState({ error: error.message });
-    }
-  };
-
-  handleSearch = query => {
-    if (query.trim() === '') {
+  const handleSearch = newQuery => {
+    if (newQuery.trim() === '') {
       Notiflix.Notify.warning('Введите поисковый запрос.');
       return;
     }
-
-    this.setState({ query, page: 1, items: [], error: null }, () => {
-      this.fetchAllPhotos();
-    });
+    setQuerty(newQuery);
+    setPage(1);
+    setItems([]);
+    setError(null);
   };
 
-  checkLastItems = () => {
-    const { items, total } = this.state;
+  const checkLastItems = () => {
     return items.length === total;
   };
 
-  onOpenModal = modalData => {
-    this.setState({
-      modal: {
-        isOpen: true,
-        data: modalData,
-      },
-      selectedImage: modalData,
-    });
+  const onOpenModal = modalData => {
+    setSelectedImage(modalData);
   };
 
-  onCloseModal = () => {
-    this.setState({
-      modal: {
-        isOpen: false,
-        data: null,
-      },
-      selectedImage: null,
-    });
+  const onCloseModal = () => {
+    setSelectedImage(null);
   };
 
-  render() {
-    const showPhotos =
-      Array.isArray(this.state.items) && this.state.items.length;
-    const { items, selectedImage, isLoading, error } = this.state;
-    const isLastItems = this.checkLastItems();
-    return (
-      <StyledAppContainer>
-        <Searchbar handleSearch={this.handleSearch} />
-        {isLoading && <Loader />}
-        {showPhotos && (
-          <div>
-            <ImageGallery items={items} onOpenModal={this.onOpenModal} />
-            <LoadMoreButton
-              onLoadMore={this.loadMoreImages}
-              isLastItems={isLastItems}
-            />
-          </div>
-        )}
-        {error && <p>{error}</p>}
-        <Modal selectedImage={selectedImage} onCloseModal={this.onCloseModal} />
-      </StyledAppContainer>
-    );
-  }
-}
+  const showPhotos = Array.isArray(items) && items.length;
+  const isLastItems = checkLastItems();
+
+  return (
+    <StyledAppContainer>
+      <Searchbar handleSearch={handleSearch} />
+      {isLoading && <Loader />}
+      {showPhotos && (
+        <div>
+          <ImageGallery items={items} onOpenModal={onOpenModal} />
+          {!isLastItems && <LoadMoreButton onLoadMore={setPage(page + 1)} />}
+        </div>
+      )}
+      {error && <p>{error}</p>}
+      <Modal selectedImage={selectedImage} onCloseModal={onCloseModal} />
+    </StyledAppContainer>
+  );
+};

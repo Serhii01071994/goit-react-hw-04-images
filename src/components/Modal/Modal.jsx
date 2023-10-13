@@ -1,45 +1,38 @@
-import React, { Component } from 'react';
+import { useEffect } from 'react';
 
-export default class Modal extends Component {
-  componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown);
-  }
+export const Modal = ({ selectedImage, onCloseModal }) => {
+  useEffect(() => {
+    const handleKeyDown = event => {
+      if (event.code === 'Escape') {
+        onCloseModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', this.handleKeyDown);
+    };
+  }, [onCloseModal]);
 
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-  }
-
-  handleKeyDown = event => {
-    if (event.code === 'Escape') {
-      this.props.onCloseModal();
-    }
-  };
-
-  handleOverlayClick = event => {
+  const handleOverlayClick = event => {
     if (event.target === event.currentTarget) {
-      this.props.onCloseModal();
+      onCloseModal();
     }
   };
 
-  render() {
-    const { selectedImage } = this.props;
+  if (!selectedImage) return null;
+  const { tags, largeImageURL } = selectedImage;
 
-    if (!selectedImage) return null;
-
-    const { tags, largeImageURL } = selectedImage;
-
-    return (
-      <div className="Overlay " onClick={this.handleOverlayClick}>
-        <div className="Modal">
-          <button onClick={this.props.onCloseModal}></button>
-          <img
-            src={largeImageURL}
-            alt={tags}
-            loading="lazy"
-            className="largeImg"
-          />
-        </div>
+  return (
+    <div className="Overlay " onClick={handleOverlayClick}>
+      <div className="Modal">
+        <button onClick={onCloseModal}></button>
+        <img
+          src={largeImageURL}
+          alt={tags}
+          loading="lazy"
+          className="largeImg"
+        />
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
