@@ -7,6 +7,7 @@ import { Loader } from './Loader/Loader';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { LoadMoreButton } from './LoadMoreButton/LoadMoreButton';
 import { Modal } from './Modal/Modal';
+
 import Notiflix from 'notiflix';
 
 export const App = () => {
