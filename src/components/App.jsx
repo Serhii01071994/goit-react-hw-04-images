@@ -19,9 +19,13 @@ export const App = () => {
   const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
+    if (query.trim() === '') {
+      return;
+    }
+    setIsLoading(true);
+
     const fetchAllPhotos = async () => {
       try {
-        setIsLoading(true);
         const photo = await fetchPhoto(query, page);
         if (photo.hits.length === 0) {
           Notiflix.Notify.info('Изображение не найдено.');
@@ -39,30 +43,6 @@ export const App = () => {
     };
     fetchAllPhotos();
   }, [query, page]);
-
-  // const loadMoreImages = async () => {
-  //   const nextPage = page + 1;
-  //   if (items.length >= total) {
-  //     Notiflix.Notify.info('Больше изображений не найдено.');
-  //     return;
-  //   }
-
-  //   try {
-  //     const photo = await fetchPhoto(query, nextPage);
-  //     if (photo.hits.length === 0) {
-  //       Notiflix.Notify.info('Больше изображений не найдено.');
-  //     } else {
-  //       this.setState(prevState => ({
-  //         items: [...prevState.items, ...photo.hits],
-  //         page: nextPage,
-  //       }));
-  //       Notiflix.Notify.success('Изображения успешно загружены.');
-  //     }
-  //   } catch (error) {
-  //     Notiflix.Notify.failure('Произошла ошибка при загрузке изображений.');
-  //     this.setState({ error: error.message });
-  //   }
-  // };
 
   const handleSearch = newQuery => {
     if (newQuery.trim() === '') {
@@ -87,7 +67,7 @@ export const App = () => {
     setSelectedImage(null);
   };
 
-  const showPhotos = Array.isArray(items) && items.length;
+  const showPhotos = items.length > 0;
   const isLastItems = checkLastItems();
 
   return (
@@ -97,7 +77,9 @@ export const App = () => {
       {showPhotos && (
         <div>
           <ImageGallery items={items} onOpenModal={onOpenModal} />
-          {!isLastItems && <LoadMoreButton onLoadMore={setPage(page + 1)} />}
+          {!isLastItems && (
+            <LoadMoreButton onLoadMore={() => setPage(page + 1)} />
+          )}
         </div>
       )}
       {error && <p>{error}</p>}
